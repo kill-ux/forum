@@ -1,0 +1,9 @@
+{{template "header.html" .}}
+
+<div></div>
+<div class="error">
+    {{ .PageError.Code }}
+    |
+    {{ .PageError.Msg }}
+</div>
+{{template "footer.html" .}}

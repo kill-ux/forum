@@ -1,0 +1,27 @@
+{{template "header.html" .}}
+<form action="/auth/signup" method="post" class="login">
+    <h2 class="login-h2">Sign Up</h2>
+    <label class="lab-login" for="Username">Username :</label>
+    <div class="div-input">
+        <input  type="text" name="name" id="Name" class="input" maxlength="100" placeholder="E.g: lazyboob360" required >
+    </div>
+    <label class="lab-login" for="pass">Email :</label>
+    <div class="div-input">
+        <input  type="email" name="email" id="email" class="input" maxlength="100" placeholder="E.g: lazyboob360@staff.zone" required>
+    </div>
+    <label class="lab-login" for="pass">Password :</label>
+    <div class="div-input">
+        <input type="password" name="password" id="pass" minlength="8" class="input" maxlength="100" placeholder="more than 8 defferent charachteres" required>
+    </div>
+    <label class="lab-login" for="pass">Confirm Password :</label>
+    <div class="div-input">
+        <input type="password" name="confirm" id="pass" minlength="8" class="input" maxlength="100" placeholder="type password again" required>
+    </div>
+    {{ if .ErrorEmail }} <div class="email-error">*{{ .ErrorEmail }}</div> {{ end }}
+    <input type="submit" value="Sign Up" class="btn btn-button">
+</form>
+
+
+
+
+{{template "footer.html" .}}

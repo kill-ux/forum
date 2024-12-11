@@ -1,0 +1,47 @@
+{{template "header.html" .}}
+<form action="/auth/login" method="post" class="login">
+    <h2 class="login-h2">Login</h2>
+    <label class="lab-login" for="Username">Email / Username :</label>
+    <div class="div-input">
+
+    <input type="text" name="email" id="Name" class="input" placeholder="E.g: lazyboob360@staff.zone OR:lazyboob360" maxlength="100">
+    </div>
+    <label class="lab-login" for="pass">Password :</label>
+    <div class="div-input">
+        <input type="password" name="password" id="pass" class="input" placeholder="Enter your password" minlength="8" maxlength="100">
+            <svg class="eye" onclick="show(this)" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                class="feather feather-eye-off">
+                <path
+                    d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24">
+                </path>
+                <line x1="1" y1="1" x2="23" y2="23"></line>
+            </svg>
+
+            <svg class="eye" onclick="hide(this)" style="display: none;" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" class="feather feather-eye">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+    </div>
+    {{ if .ErrorEmail }} <div class="email-error">*{{ .ErrorEmail }}</div> {{ end }}
+
+
+    <input type="submit" value="Login" class="btn btn-button">
+</form>
+{{template "footer.html" .}}
+
+<script>
+    show = (e) => {
+        document.getElementById('pass').type = 'text';
+        e.style.display = "none";
+        e.nextElementSibling.style.display = "block";
+    }
+
+    hide = (e) => {
+        document.getElementById('pass').type = 'password';
+        e.style.display = "none";
+        e.previousElementSibling.style.display = "block";
+    }
+</script>

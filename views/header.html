@@ -1,0 +1,75 @@
+<!-- header.html -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>uux</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/error.css">
+</head>
+
+<body>
+    <header class="header">
+        <div class="logo">
+            <h1><a href="/">UUX</a></h1>
+        </div>
+        <div class="filter">
+            <span class="nav cat">Categories
+                <form action="/filter/categories" method="GET" class="cat-form">
+                    {{range .Categories}}
+                    <input type="checkbox" name="categories" id="{{.Id}}" value="{{.Id}}" class="checkbox">
+
+                    <label for="{{.Id}}" class="category-label">{{.CatName}}</label>
+                    {{end}}
+                    <br>
+                    <input type="submit" value="Filter" class="btn btn-filter">
+                </form>
+            </span>
+
+
+            <a href="/filter/created" class="nav">created posts</a>
+            <a href="/filter/liked" class="nav">liked posts</a>
+        </div>
+        <div class="log">
+            {{if .Log }}
+            <!-- <a href="/auth/logout" class="logout-btn btn">Logout</a> -->
+            <!-- <div id="h3{{.Id}}" class=""> -->
+            <label class="a-user-post" for="user{{ .User.Id }}"> <img class="img-user-post" src="/images/pics/{{.Image}}" alt="pfp">
+                <h3>{{.UserName}}</h3>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    class="feather feather-chevron-down">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+            </label>
+            <input class="checkbox checkbox-user" type="checkbox" name="" id="user{{ .User.Id }}">
+            <div class="user-log">
+                <form action="/pfp/update" method="post" class="change-image-form" enctype="multipart/form-data">
+                    <label for="change-image"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" class="feather feather-edit">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                    </label>
+                    <input type="file" id="change-image" name="image" onchange="document.querySelector('.change-image-form').submit()">
+                    <img class="" src="/images/pics/{{.Image}}" alt="pfp">
+                </form>
+                <hr>
+                <h3>{{.UserName}}</h3>
+                <hr>
+                <h3>{{.Email}}</h3>
+                <hr>
+                <a href="/auth/logout" class="logout-btn btn" id="logout-btn">Logout</a>
+            </div>
+            <!-- </div> -->
+            {{else}}
+            <div class="a-user-post">
+                <a href="/login" class="login-btn btn">Login</a>
+                <a href="/signup" class="signup-btn btn">Signup</a>
+            </div>
+            {{end}}
+        </div>
+    </header>
