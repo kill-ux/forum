@@ -122,6 +122,7 @@ body {
     border-radius: 0px 4px 4px 4px;
     text-align: center;
     backdrop-filter: blur(2px);
+    z-index:10;
 }
 
 .btn-filter {
