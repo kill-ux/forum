@@ -1,7 +1,6 @@
 package forum
 
 import (
-	"fmt"
 	"net/http"
 	"regexp"
 	"time"
@@ -45,7 +44,6 @@ func (data *Page) AuthLogin(res http.ResponseWriter, req *http.Request) {
 	if err != nil || err1 != nil {
 		errcookie.Value = "incorrect credentials!"
 		http.SetCookie(res, &errcookie)
-		// data.ErrorEmail = "Email or password is incorrect!"
 		http.Redirect(res, req, "/login", http.StatusFound)
 		return
 	}
@@ -67,7 +65,6 @@ func (data *Page) AuthLogin(res http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		errcookie.Value = "unexpected error try again!"
 		http.SetCookie(res, &errcookie)
-		// data.ErrorEmail = "Email or password is incorrect!"
 		http.Redirect(res, req, "/login", http.StatusFound)
 		return
 	}
@@ -92,7 +89,6 @@ func (data Page) AuthSignup(res http.ResponseWriter, req *http.Request) {
 	name, email, pass, confirm := req.FormValue("name"), req.FormValue("email"), req.FormValue("password"), req.FormValue("confirm")
 	emailRg := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
 	nameRg := regexp.MustCompile(`^[a-zA-Z0-9-]{3,100}$`)
-	fmt.Println(len(pass))
 	if pass != confirm || !emailRg.MatchString(email) || len(email) > 200 || !nameRg.MatchString(name) ||
 		len(name) > 400 || len(pass) < 8 || len(pass) > 400 || len(confirm) < 8 || len(confirm) > 400 {
 		cookie.Value = "invalide credentials!"

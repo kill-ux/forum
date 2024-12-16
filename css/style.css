@@ -337,10 +337,7 @@ input[type=file]::file-selector-button:hover {
 }
 
 .add-post-label {
-    display: inline-block;
-    margin: 10px;
-    margin-left: 30px;
-    margin-bottom: 0;
+    margin: 200px 30px 0px 30px;
 }
 
 .add-post-check:checked+.add-post-label {

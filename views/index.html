@@ -4,7 +4,9 @@
 <main>
     <div class="posts">
         <input type="checkbox" name="" id="add-post-check" class="add-post-check">
-        <label for="add-post-check" class="btn add-post-label"> Add Post </label>
+        <div>
+            <label for="add-post-check" class="btn add-post-label"> Add Post </label> {{ if .ErrorEmail }} <span class="email-error post-error">*{{ .ErrorEmail }}</span> {{ end }}
+        </div>
         <fieldset class="add-fieldset">
             <form action="/posts/store" method="post" enctype="multipart/form-data" id="likesForm">
                 <div>
@@ -166,7 +168,7 @@
         </svg>
     </a>
     {{ end }}
-    {{ if .Current }}
+    {{ if and .Current .Posts }}
     <a href="{{ .Next }}">
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"

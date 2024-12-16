@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"os"
 	"slices"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -43,6 +42,18 @@ func (data Page) PostsStore(res http.ResponseWriter, req *http.Request) {
 		data.Error(res, http.StatusMethodNotAllowed)
 		return
 	}
+	if _, ok := data.Cach[data.Id]; ok {
+		errcookie := http.Cookie{
+			Name:     "errors",
+			Value:    "you are on cooldown! wait for a bit and try again ^_^ .",
+			Path:     "/",
+			MaxAge:   1,
+			HttpOnly: true, // Secure the cookie, not accessible by JS
+		}
+		http.SetCookie(res, &errcookie)
+		http.Redirect(res, req, "/", http.StatusFound)
+		return
+	}
 	title, body := req.FormValue("title"), req.FormValue("body")
 	title, body = strings.TrimSpace(title), strings.TrimSpace(body)
 	if title == "" || len(title) > 400 || body == "" || len(body) > 5000 {
@@ -73,6 +84,7 @@ func (data Page) PostsStore(res http.ResponseWriter, req *http.Request) {
 				return
 			}
 		}
+		data.Cach[data.Id] = time.Now().Unix()
 		http.Redirect(res, req, "/", http.StatusFound)
 	}
 }
@@ -137,12 +149,12 @@ func (data *Page) PostsInfo(res http.ResponseWriter, req *http.Request) {
 	if err == nil {
 		post.Did = 1
 	}
-	data.Previous = "http://localhost:8080/posts/" + strid + "?page=" + strconv.Itoa(num-1)
+	data.Previous = "/posts/" + strid + "?page=" + strconv.Itoa(num-1)
 	if num == 1 {
 		data.Previous = "0"
 	}
-	data.Next = "http://localhost:8080/posts/" + strid + "?page=" + strconv.Itoa(num+1)
-	query = "SELECT C.*,U.username,U.image FROM comments C JOIN users U ON C.user_id = U.id where C.post_id = ? LIMIT 10 OFFSET " + strconv.Itoa((num-1)*10)
+	data.Next = "/posts/" + strid + "?page=" + strconv.Itoa(num+1)
+	query = "SELECT C.*,U.username,U.image FROM comments C JOIN users U ON C.user_id = U.id where C.post_id = ? ORDER BY modified_at DESC LIMIT 10 OFFSET " + strconv.Itoa((num-1)*10)
 	rows, err = data.DB.Query(query, id)
 	for rows.Next() {
 		comment := Comment{}
@@ -166,9 +178,6 @@ func (data *Page) PostsInfo(res http.ResponseWriter, req *http.Request) {
 		}
 		post.Comments = append(post.Comments, comment)
 	}
-	sort.Slice(post.Comments, func(i, j int) bool {
-		return post.Comments[i].Modified_at > post.Comments[j].Modified_at
-	})
 	data.Posts = append(data.Posts, post)
 	data.RenderPage("post.html", res)
 }

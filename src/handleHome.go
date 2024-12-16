@@ -50,7 +50,7 @@ func (data *Page) LoadPosts(req *http.Request, res http.ResponseWriter, query st
 	req.URL.RawQuery = url.Encode()
 	data.Next = req.URL.Path + "?" + req.URL.RawQuery
 	req.URL.RawQuery = url.Encode()
-	tempQuery := "SELECT count(*) nb FROM posts"
+	tempQuery := "SELECT count(*) nb FROM (" + query + ")"
 	nb := 0
 	row := data.DB.QueryRow(tempQuery)
 	err = row.Scan(&nb)
@@ -61,7 +61,7 @@ func (data *Page) LoadPosts(req *http.Request, res http.ResponseWriter, query st
 	if nb%10 != 0 {
 		nb += 10
 	}
-	if num != nb/10 {
+	if num != nb/10 && nb != 0 {
 		data.Current = true
 	} else {
 		data.Current = false

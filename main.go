@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	forum "forum/src"
 
@@ -23,7 +24,7 @@ func main() {
 		log.Fatal(err.Error())
 	}
 	db.Exec(string(creation))
-	data := forum.Page{DB: db}
+	data := forum.Page{DB: db, Cach: map[int]int64{}}
 	data.FillCategories()
 	http.HandleFunc("/", data.Routers)
 	http.HandleFunc("/css/", func(res http.ResponseWriter, req *http.Request) {
@@ -50,6 +51,19 @@ func main() {
 		}
 		http.FileServer(http.Dir(".")).ServeHTTP(res, req)
 	})
+
+	// re
+	go func() {
+		for {
+			time.Sleep(time.Second * 10)
+			for key, value := range data.Cach {
+				current := time.Now().Unix() - value
+				if current > 10 {
+					delete(data.Cach, key)
+				}
+			}
+		}
+	}()
 
 	fmt.Println("http://localhost:8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))

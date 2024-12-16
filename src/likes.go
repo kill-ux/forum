@@ -10,7 +10,7 @@ func (data Page) CommentsLike(res http.ResponseWriter, req *http.Request) {
 		http.Error(res, "StatusMethodNotAllowed", http.StatusMethodNotAllowed)
 		return
 	}
-	comment_id, like, user_id, post_id := req.FormValue("comment_id"), req.FormValue("like"), req.FormValue("user_id"), req.FormValue("post_id")
+	comment_id, like, user_id, _ := req.FormValue("comment_id"), req.FormValue("like"), req.FormValue("user_id"), req.FormValue("post_id")
 
 	if like != "0" && like != "1" {
 		http.Error(res, "Bad Request", http.StatusBadRequest)
@@ -35,7 +35,7 @@ func (data Page) CommentsLike(res http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	http.Redirect(res, req, "/posts/"+post_id+"#comment"+comment_id, http.StatusFound)
+	http.Redirect(res, req, strings.Split(req.Referer(), ":8080")[1]+"#comment"+comment_id, http.StatusFound)
 }
 
 func (data Page) PostsLike(res http.ResponseWriter, req *http.Request) {

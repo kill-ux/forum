@@ -6,7 +6,8 @@ import (
 )
 
 type Page struct {
-	DB *sql.DB
+	DB   *sql.DB
+	Cach map[int]int64
 	User
 	Posts      []Post
 	Categories []Categorie
