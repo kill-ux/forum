@@ -2,6 +2,8 @@ package forum
 
 import (
 	"net/http"
+	"os"
+	"strings"
 )
 
 func (data *Page) ResetUser(req *http.Request) {
@@ -13,13 +15,25 @@ func (data *Page) ResetUser(req *http.Request) {
 	}
 }
 
-func (data *Page) Routers(res http.ResponseWriter, req *http.Request) {
-	data.ResetUser(req)
-	data.Posts = data.Posts[:0]
+func checkSuff(path string) bool {
+	// arr := []string{"store", "update", "likes"}
+	arr := []string{"store", "likes"}
+	for _, v := range arr {
+		if strings.HasSuffix(path, v) {
+			return false
+		}
+	}
+	return true
+}
 
+func Routers(res http.ResponseWriter, req *http.Request) {
+	data := &Page{}
+	data.FillCategories()
+	data.ResetUser(req)
 	token, err := req.Cookie("token")
+
 	path := req.URL.Path[1:]
-	if path == "" || (len(path) > len("posts/") && path[:len("posts/")] == "posts/" && path[len("posts/"):] != "store" && path[len("posts/"):] != "likes") || path == "filter/categories" {
+	if path == "" || (strings.HasPrefix(path, "posts/") && checkSuff(path)) || path == "filter/categories" || strings.HasPrefix(path, "css/") || strings.HasPrefix(path, "js/") || strings.HasPrefix(path, "images/") {
 		if err == nil && data.VerifyToken(token.Value) {
 			data.Log = 1
 		}
@@ -58,20 +72,44 @@ func (data *Page) Routers(res http.ResponseWriter, req *http.Request) {
 		data.CommentsLike(res, req)
 	case "posts/likes":
 		data.PostsLike(res, req)
-	case "posts/update":
-		data.PostsUpdate(res, req)
+	// case "posts/update":
+	// 	data.PostsUpdate(res, req)
 	case "filter/categories":
 		data.FilterCategories(res, req)
 	case "filter/created":
 		data.CreatedPosts(res, req)
 	case "filter/liked":
 		data.LikedPosts(res, req)
-	case "pfp/update":
-		data.UpdatePFP(res, req)
+	// case "pfp/update":
+	// 	data.UpdatePFP(res, req)
 	default:
-		if len(path) > len("posts/delete/") && path[:len("posts/delete/")] == "posts/delete/" {
-			data.PostsDelete(res, req)
-		} else if len(path) > len("posts/") && path[:len("posts/")] == "posts/" {
+		// if strings.HasPrefix(path, "posts/delete/") {
+		// 	data.PostsDelete(res, req)
+		// } else
+		if strings.HasPrefix(path, "css/") {
+			_, err := os.ReadFile(req.URL.Path[1:])
+			if err != nil {
+				data.Error(res, http.StatusNotFound)
+				return
+			}
+			http.StripPrefix("/css/", http.FileServer(http.Dir("css"))).ServeHTTP(res, req)
+		} else if strings.HasPrefix(path, "js/") {
+			_, err := os.ReadFile(req.URL.Path[1:])
+			if err != nil {
+				data.Error(res, http.StatusInternalServerError)
+				return
+			}
+			http.StripPrefix("/js/", http.FileServer(http.Dir("js"))).ServeHTTP(res, req)
+		} else if strings.HasPrefix(path, "images/") {
+			_, err := os.ReadFile(req.URL.Path[1:])
+			if err != nil {
+				data.Error(res, http.StatusInternalServerError)
+				return
+			}
+			http.StripPrefix("/images/", http.FileServer(http.Dir("images"))).ServeHTTP(res, req)
+		} else if strings.HasPrefix(path, "posts/") && strings.HasSuffix(path, "/comments") {
+			data.CommentsInfo(res, req)
+		} else if strings.HasPrefix(path, "posts/") {
 			data.PostsInfo(res, req)
 		} else {
 			data.Error(res, http.StatusNotFound)

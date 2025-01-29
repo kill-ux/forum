@@ -1,71 +1,83 @@
 package forum
 
 import (
+	"encoding/json"
+	"fmt"
 	"net/http"
-	"strings"
 )
 
-func (data Page) CommentsLike(res http.ResponseWriter, req *http.Request) {
+// handleLike performs the common logic for managing likes
+func handleLike(res http.ResponseWriter, req *http.Request, likeType, idKey string, data Page) {
 	if req.Method != "POST" {
-		http.Error(res, "StatusMethodNotAllowed", http.StatusMethodNotAllowed)
+		http.Error(res, "Method Not Allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	comment_id, like, user_id, _ := req.FormValue("comment_id"), req.FormValue("like"), req.FormValue("user_id"), req.FormValue("post_id")
 
+	id := req.FormValue(idKey)
+	like := req.FormValue("like")
 	if like != "0" && like != "1" {
 		http.Error(res, "Bad Request", http.StatusBadRequest)
 		return
 	}
 
-	query := "SELECT like FROM likes WHERE user_id = ? AND comment_id = ? AND post_id ISNULL"
-	row := data.DB.QueryRow(query, user_id, comment_id)
-	liked := false
-	err := row.Scan(&liked)
-	if err != nil {
-		query = "INSERT INTO likes(like,user_id,comment_id) VALUES (?,?,?)"
-		data.DB.Exec(query, like, user_id, comment_id)
+	var additionalCondition string
+	if likeType == "comment" {
+		additionalCondition = "AND post_id ISNULL"
+	} else if likeType == "post" {
+		additionalCondition = "AND comment_id ISNULL"
+	}
 
+	// Check if a like/dislike already exists
+	query := "SELECT like FROM likes WHERE user_id = ? AND " + idKey + " = ? " + additionalCondition
+	row := DB.QueryRow(query, data.Id, id)
+
+	var liked bool
+	err := row.Scan(&liked)
+	if err != nil { // No existing like/dislike, insert a new one
+		query = "INSERT INTO likes (like, user_id, " + idKey + ") VALUES (?, ?, ?)"
+		DB.Exec(query, like, data.Id, id)
 	} else {
+		// If like status matches, remove the like; otherwise, update it
 		if (like == "1" && liked) || (like == "0" && !liked) {
-			query = "DELETE FROM likes WHERE user_id = ? AND comment_id = ? AND post_id ISNULL"
-			data.DB.Exec(query, user_id, comment_id)
+			query = "DELETE FROM likes WHERE user_id = ? AND " + idKey + " = ? " + additionalCondition
+			DB.Exec(query, data.Id, id)
 		} else {
-			query = "UPDATE likes SET like = ? WHERE user_id = ? AND comment_id = ? AND post_id ISNULL"
-			data.DB.Exec(query, like, user_id, comment_id)
+			query = "UPDATE likes SET like = ? WHERE user_id = ? AND " + idKey + " = ? " + additionalCondition
+			DB.Exec(query, like, data.Id, id)
 		}
 	}
 
-	http.Redirect(res, req, strings.Split(req.Referer(), ":8080")[1]+"#comment"+comment_id, http.StatusFound)
+	var Response struct {
+		Likes    int
+		Dislikes int
+		Did      bool
+		Like     bool
+	}
+	did := ""
+	query = fmt.Sprintf(`SELECT (SELECT COUNT(*) FROM likes WHERE %s = ? AND like = 1) as comment_likes,
+		(SELECT COUNT(*) FROM likes WHERE %s = ? AND like = 0) as comment_dislikes,
+		COALESCE((SELECT like FROM likes WHERE %s = ? AND user_id = ?), "") as did`, idKey, idKey, idKey)
+	if err = DB.QueryRow(query, id, id, id, data.Id).Scan(&Response.Likes, &Response.Dislikes, &did); err != nil {
+		fmt.Println(err)
+	}
+	if did != "" {
+		Response.Did = true
+		Response.Like = (did == "1")
+	}
+
+	json.NewEncoder(res).Encode(Response)
+
+	// Use the getPathFromReferer function to properly handle the redirect URL
+	// refURL := getPathFromReferer(req)
+	// http.Redirect(res, req, refURL+"#"+likeType+id, http.StatusFound)
 }
 
+// CommentsLike handles likes and dislikes for comments
+func (data Page) CommentsLike(res http.ResponseWriter, req *http.Request) {
+	handleLike(res, req, "comment", "comment_id", data)
+}
+
+// PostsLike handles likes and dislikes for posts
 func (data Page) PostsLike(res http.ResponseWriter, req *http.Request) {
-	if req.Method != "POST" {
-		http.Error(res, "StatusMethodNotAllowed", http.StatusMethodNotAllowed)
-		return
-	}
-	like, post_id := req.FormValue("like"), req.FormValue("post_id")
-	user_id := data.Id
-	if like != "0" && like != "1" {
-		http.Error(res, "Bad Request", http.StatusBadRequest)
-		return
-	}
-
-	query := "SELECT like FROM likes WHERE user_id = ? AND comment_id ISNULL AND post_id = ?"
-	row := data.DB.QueryRow(query, user_id, post_id)
-	liked := false
-	err := row.Scan(&liked)
-	if err != nil {
-		query = "INSERT INTO likes(like,user_id,post_id) VALUES (?,?,?)"
-		data.DB.Exec(query, like, user_id, post_id)
-
-	} else {
-		if (like == "1" && liked) || (like == "0" && !liked) {
-			query = "DELETE FROM likes WHERE user_id = ? AND comment_id ISNULL AND post_id = ?"
-			data.DB.Exec(query, user_id, post_id)
-		} else {
-			query = "UPDATE likes SET like = ? WHERE user_id = ? AND comment_id ISNULL AND post_id = ?"
-			data.DB.Exec(query, like, user_id, post_id)
-		}
-	}
-	http.Redirect(res, req, strings.Split(req.Referer(), ":8080")[1]+"#post"+post_id, http.StatusFound)
+	handleLike(res, req, "post", "post_id", data)
 }

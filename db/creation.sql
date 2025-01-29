@@ -8,8 +8,8 @@ CREATE TABLE IF NOT EXISTS `users` (
     `image` TEXT NOT NULL,
     `role` TEXT NOT NULL,
     `token` TEXT UNIQUE,
-    `token_exp` INTEGER,  -- Stores Unix timestamp or expiration time
-    `created_at` INTEGER NOT NULL -- Unix timestamp (or TEXT if you use ISO 8601 format)
+    `token_exp` INTEGER,  
+    `created_at` INTEGER NOT NULL 
 );
 
 CREATE TABLE IF NOT EXISTS `posts` (
@@ -18,8 +18,8 @@ CREATE TABLE IF NOT EXISTS `posts` (
     `title` TEXT NOT NULL,
     `body` TEXT NOT NULL,
     `image` TEXT,
-    `created_at` INTEGER NOT NULL, -- Unix timestamp (or TEXT if you use ISO 8601 format)
-    `modified_at` INTEGER NOT NULL, -- Unix timestamp (or TEXT if you use ISO 8601 format)
+    `created_at` INTEGER NOT NULL, 
+    `modified_at` INTEGER NOT NULL, 
     FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 );
 
@@ -28,8 +28,8 @@ CREATE TABLE IF NOT EXISTS `comments` (
     `user_id` INTEGER NOT NULL,
     `post_id` INTEGER NOT NULL,
     `body` TEXT NOT NULL,
-    `created_at` INTEGER NOT NULL, -- Unix timestamp (or TEXT if you use ISO 8601 format)
-    `modified_at` INTEGER NOT NULL, -- Unix timestamp (or TEXT if you use ISO 8601 format)
+    `created_at` INTEGER NOT NULL,
+    `modified_at` INTEGER NOT NULL, 
     FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
     FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`) ON DELETE CASCADE
 );
@@ -58,18 +58,3 @@ CREATE TABLE IF NOT EXISTS `likes` (
     FOREIGN KEY (`comment_id`) REFERENCES `comments` (`id`) ON DELETE CASCADE
 );
 
--- Insert default categories
-INSERT INTO `categories` (`name`)
-VALUES 
-    ("art"),
-    ("programming"),
-    ("news"),
-    ("studying"),
-    ("business"),
-    ("Discussions"),
-    ("Questions"),
-    ("Ideas"),
-    ("Articles"),
-    ("Events"),
-    ("Issues"),
-    ("Others");

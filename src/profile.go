@@ -1,39 +1,51 @@
 package forum
 
-import (
-	"net/http"
-	"os"
-)
+// import (
+// 	"net/http"
+// 	"os"
+// )
 
-func (data Page) UpdatePFP(res http.ResponseWriter, req *http.Request) {
-	// DELETE OLD pfp
-	query := "SELECT image FROM users WHERE id = ? "
-	row := data.DB.QueryRow(query, data.Id)
-	oldPFP := ""
-	err := row.Scan(&oldPFP)
-	if err != nil {
-		data.Error(res, http.StatusInternalServerError)
-		return
-	}
+// func (data Page) UpdatePFP(res http.ResponseWriter, req *http.Request) {
+// 	// Retrieve the current profile picture (PFP)
+// 	query := "SELECT image FROM users WHERE id = ?"
+// 	row := DB.QueryRow(query, data.Id)
+// 	var oldPFP string
+// 	err := row.Scan(&oldPFP)
+// 	if err != nil {
+// 		data.Error(res, http.StatusInternalServerError)
+// 		return
+// 	}
 
-	// fetching form data
-	file, fileheader, err := req.FormFile("image")
-	var image string
-	if err == nil {
-		image = data.HandelImage("pics", file, fileheader, res, req)
-	}
-	// UPDATE DB
-	if image != "" {
-		query = "UPDATE users SET image = ? WHERE id = ?"
-		_, err = data.DB.Exec(query, image, data.Id)
-		if err != nil {
-			data.Error(res, http.StatusInternalServerError)
-			return
-		}
-		if oldPFP != "profile.png" {
-			os.Remove("images/pics/" + oldPFP)
-		}
-	}
-	// REDIRECT
-	http.Redirect(res, req, "/", http.StatusFound)
-}
+// 	// Handle the image upload
+// 	file, fileheader, err := req.FormFile("image")
+// 	var image string
+// 	if err == nil {
+// 		image = data.HandleImage("pics", file, fileheader)
+// 	} else {
+// 		data.Error(res, http.StatusInternalServerError)
+// 		return
+// 	}
+
+// 	// If a new image is provided, update the database and delete the old one if necessary
+// 	if image != "" {
+// 		// Update the database with the new image
+// 		query = "UPDATE users SET image = ? WHERE id = ?"
+// 		_, err = DB.Exec(query, image, data.Id)
+// 		if err != nil {
+// 			data.Error(res, http.StatusInternalServerError)
+// 			return
+// 		}
+
+// 		// Remove the old profile picture if it’s not the default one
+// 		if oldPFP != "profile.png" && oldPFP != "" {
+// 			err := os.Remove("images/pics/" + oldPFP)
+// 			if err != nil {
+// 				data.Error(res, http.StatusInternalServerError)
+// 				return
+// 			}
+// 		}
+// 	}
+
+// 	// Redirect the user back to the home page or another suitable location
+// 	http.Redirect(res, req, "/", http.StatusFound)
+// }

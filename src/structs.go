@@ -2,12 +2,11 @@ package forum
 
 import (
 	"database/sql"
+	"sync"
 	"time"
 )
 
 type Page struct {
-	DB   *sql.DB
-	Cach map[int]int64
 	User
 	Posts      []Post
 	Categories []Categorie
@@ -20,6 +19,12 @@ type Page struct {
 	Last     string
 	Current  bool
 }
+
+var (
+	DB   *sql.DB
+	Cach = map[int]int64{}
+	Mux sync.Mutex
+)
 
 type Categorie struct {
 	Id      int
@@ -49,7 +54,7 @@ type Post struct {
 	Body        string
 	Like        int
 	Dislike     int
-	Did         int
+	Did         bool
 	Liked       bool
 	Created_at  int
 	Modified_at int
@@ -63,7 +68,7 @@ type Comment struct {
 	Body        string
 	Like        int
 	Dislike     int
-	Did         int
+	Did         bool
 	Liked       bool
 	Created_at  int
 	Modified_at int

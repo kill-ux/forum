@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"time"
 
 	forum "forum/src"
@@ -16,55 +17,53 @@ import (
 func main() {
 	db, err := sql.Open("sqlite3", "db/forum.db")
 	if err != nil {
-		log.Fatal(err.Error())
+		log.Fatal("Error: ", err)
 	}
-	defer db.Close()
+	db.SetMaxOpenConns(10)
+	forum.DB = db
+	// to close db when panic
+	defer func() {
+		if err := recover(); err != nil {
+			db.Close()
+			log.Fatal("Error: ", err)
+		}
+	}()
+
+	// to close db when ctrl+c
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	go func() {
+		<-c
+		db.Close()
+		fmt.Println()
+		os.Exit(0)
+	}()
+
 	creation, err := os.ReadFile("db/creation.sql")
 	if err != nil {
-		log.Fatal(err.Error())
+		panic(err.Error())
 	}
-	db.Exec(string(creation))
-	data := forum.Page{DB: db, Cach: map[int]int64{}}
-	data.FillCategories()
-	http.HandleFunc("/", data.Routers)
-	http.HandleFunc("/css/", func(res http.ResponseWriter, req *http.Request) {
-		if req.Method != http.MethodGet {
-			data.Error(res, http.StatusMethodNotAllowed)
-			return
-		}
-		_, err := os.ReadFile(req.URL.Path[1:])
-		if err != nil {
-			data.Error(res, http.StatusNotFound)
-			return
-		}
-		http.StripPrefix("/css/", http.FileServer(http.Dir("css"))).ServeHTTP(res, req)
-	})
-	http.HandleFunc("/images/", func(res http.ResponseWriter, req *http.Request) {
-		if req.Method != http.MethodGet {
-			data.Error(res, http.StatusMethodNotAllowed)
-			return
-		}
-		_, err := os.ReadFile(req.URL.Path[1:])
-		if err != nil {
-			data.Error(res, http.StatusInternalServerError)
-			return
-		}
-		http.FileServer(http.Dir(".")).ServeHTTP(res, req)
-	})
-
+	_, err = db.Exec(string(creation))
+	if err != nil {
+		panic(err)
+	}
+	forum.FillCategoriesDB()
+	http.HandleFunc("/", forum.Routers)
 	// re
 	go func() {
 		for {
 			time.Sleep(time.Second * 10)
-			for key, value := range data.Cach {
+			forum.Mux.Lock()
+			for key, value := range forum.Cach {
 				current := time.Now().Unix() - value
 				if current > 10 {
-					delete(data.Cach, key)
+					delete(forum.Cach, key)
 				}
 			}
+			forum.Mux.Unlock()
 		}
 	}()
 
 	fmt.Println("http://localhost:8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	panic(http.ListenAndServe(":8080", nil))
 }

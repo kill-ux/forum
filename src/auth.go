@@ -3,141 +3,165 @@ package forum
 import (
 	"net/http"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/gofrs/uuid/v5"
 	"golang.org/x/crypto/bcrypt"
 )
 
+// Utility function to set cookies
+func setErrorCookie(res http.ResponseWriter, message, path string, maxAge int) {
+	http.SetCookie(res, &http.Cookie{
+		Name:     "errors",
+		Value:    message,
+		Path:     path,
+		MaxAge:   maxAge,
+		// HttpOnly: true, // Secure the cookie, not accessible by JS
+	})
+}
+
+// Render the login page
 func (data Page) Login(res http.ResponseWriter, req *http.Request) {
+	if req.Method != "GET" {
+		data.Error(res, http.StatusMethodNotAllowed)
+		return
+	}
 	data.RenderPage("login.html", res)
 }
 
+// Render the signup page
 func (data Page) Signup(res http.ResponseWriter, req *http.Request) {
+	if req.Method != "GET" {
+		data.Error(res, http.StatusMethodNotAllowed)
+		return
+	}
 	data.RenderPage("signup.html", res)
 }
 
+// Handle user login
 func (data *Page) AuthLogin(res http.ResponseWriter, req *http.Request) {
 	if req.Method != "POST" {
 		data.Error(res, http.StatusMethodNotAllowed)
 		return
 	}
-	errcookie := http.Cookie{
-		Name:     "errors",
-		Path:     "/login",
-		MaxAge:   2,
-		HttpOnly: true, // Secure the cookie, not accessible by JS
-	}
-	email, pass := req.FormValue("email"), req.FormValue("password")
-	emailRg := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
-	if !emailRg.MatchString(email) || len(email) > 400 || len(pass) < 8 || len(pass) > 400 {
-		errcookie.Value = "invalide credentials!"
-		http.SetCookie(res, &errcookie)
+
+	email, pass := strings.ToLower(req.FormValue("email")), req.FormValue("password")
+
+	// Validate input
+	if len(email) > 400 || len(pass) < 8 || len(pass) > 400 {
+		setErrorCookie(res, "Invalid credentials!", "/login", 2)
 		http.Redirect(res, req, "/login", http.StatusFound)
 		return
 	}
-	query := `SELECT * FROM users WHERE email = ? OR username = ? `
+
+	// Fetch user from the database
+	query := `SELECT * FROM users WHERE email = ? OR username = ?`
 	var user User
-	row := data.DB.QueryRow(query, email, email)
+	row := DB.QueryRow(query, email, email)
 	err := row.Scan(&user.Id, &user.UserName, &user.Email, &user.Password, &user.Image, &user.Role, &user.Token, &user.Token_Exp, &user.Created_at)
-	err1 := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(pass))
-	if err != nil || err1 != nil {
-		errcookie.Value = "incorrect credentials!"
-		http.SetCookie(res, &errcookie)
+	if err != nil || bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(pass)) != nil {
+		setErrorCookie(res, "Incorrect credentials!", "/login", 2)
 		http.Redirect(res, req, "/login", http.StatusFound)
 		return
 	}
-	data.User = user
+
+	// Generate and set a new token
 	ntoken, err := uuid.NewV1()
 	if err != nil {
 		data.Error(res, http.StatusInternalServerError)
 		return
 	}
-	cookies := &http.Cookie{
+	http.SetCookie(res, &http.Cookie{
 		Name:    "token",
 		Value:   ntoken.String(),
-		Expires: time.Now().Add(24 * time.Hour),
+		Expires: time.Now().Add(TOKEN_AGE),
 		Path:    "/",
-	}
-	http.SetCookie(res, cookies)
-	query = `UPDATE users SET token = ? , token_exp = ? WHERE id = ?`
-	_, err = data.DB.Exec(query, ntoken, time.Now().Add(24*time.Hour).Unix(), data.Id)
-	if err != nil {
-		errcookie.Value = "unexpected error try again!"
-		http.SetCookie(res, &errcookie)
+	})
+
+	// Update token in the database
+	query = `UPDATE users SET token = ?, token_exp = ? WHERE id = ?`
+	if _, err := DB.Exec(query, ntoken, time.Now().Add(24*time.Hour).Unix(), user.Id); err != nil {
+		setErrorCookie(res, "Unexpected error, try again!", "/login", 2)
 		http.Redirect(res, req, "/login", http.StatusFound)
 		return
 	}
+
+	// Log the user in
+	// data.User = user
 	data.Log = 1
-	// remove errors if logged in succefully
-	errcookie.MaxAge = -1
-	http.SetCookie(res, &errcookie)
+	setErrorCookie(res, "", "/login", -1) // Remove the error cookie
 	http.Redirect(res, req, "/", http.StatusFound)
 }
 
+// Handle user signup
 func (data Page) AuthSignup(res http.ResponseWriter, req *http.Request) {
 	if req.Method != "POST" {
 		data.Error(res, http.StatusMethodNotAllowed)
 		return
 	}
-	cookie := http.Cookie{
-		Name:     "errors",
-		Path:     "/signup",
-		MaxAge:   2,
-		HttpOnly: true, // Secure the cookie, not accessible by JS
-	}
-	name, email, pass, confirm := req.FormValue("name"), req.FormValue("email"), req.FormValue("password"), req.FormValue("confirm")
+
+	name, email, pass, confirm := strings.ToLower(req.FormValue("name")), strings.ToLower(req.FormValue("email")), req.FormValue("password"), req.FormValue("confirm")
+
+	// Validate input
 	emailRg := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
 	nameRg := regexp.MustCompile(`^[a-zA-Z0-9-]{3,100}$`)
 	if pass != confirm || !emailRg.MatchString(email) || len(email) > 200 || !nameRg.MatchString(name) ||
-		len(name) > 400 || len(pass) < 8 || len(pass) > 400 || len(confirm) < 8 || len(confirm) > 400 {
-		cookie.Value = "invalide credentials!"
-		http.SetCookie(res, &cookie)
+		len(name) > 400 || len(pass) < 8 || len(pass) > 400 {
+		setErrorCookie(res, "Invalid credentials!", "/signup", 2)
 		http.Redirect(res, req, "/signup", http.StatusFound)
 		return
 	}
+
+	// Hash password
 	password, err := bcrypt.GenerateFromPassword([]byte(pass), 14)
 	if err != nil {
-		cookie.Value = "unexpected error try again!"
-		http.SetCookie(res, &cookie)
+		setErrorCookie(res, "Unexpected error, try again!", "/signup", 2)
 		http.Redirect(res, req, "/signup", http.StatusFound)
 		return
 	}
-	pass = string(password)
-	query := `INSERT INTO users Values (NULL,?,?,?,'profile.png','user',NULL,0,?)`
-	_, err = data.DB.Exec(query, name, email, pass, time.Now())
-	if err != nil {
-		cookie.Value = "unvalid data, try again!"
-		http.SetCookie(res, &cookie)
+
+	// Insert user into the database
+	query := `INSERT INTO users VALUES (NULL, ?, ?, ?, 'profile.png', 'user', NULL, 0, ?)`
+	if _, err := DB.Exec(query, name, email, string(password), time.Now()); err != nil {
+		setErrorCookie(res, "Invalid data, try again!", "/signup", 2)
 		http.Redirect(res, req, "/signup", http.StatusFound)
 		return
 	}
-	cookie.MaxAge = -1
-	http.SetCookie(res, &cookie)
+
+	// Redirect to login page on success
+	setErrorCookie(res, "", "/signup", -1) // Remove the error cookie
 	http.Redirect(res, req, "/login", http.StatusFound)
 }
 
+// Verify user token
 func (data *Page) VerifyToken(token string) bool {
-	_, err := uuid.FromString(token)
-	query := `SELECT * FROM users WHERE token = ? `
-	row := data.DB.QueryRow(query, token)
-	err1 := row.Scan(&data.Id, &data.UserName, &data.Email, &data.Password, &data.Image, &data.Role, &data.Token, &data.Token_Exp, &data.Created_at)
-	dur := int(time.Now().Add(TOKEN_AGE).Unix()) - data.Token_Exp
-	return err == nil && err1 == nil && dur < int(TOKEN_AGE)
+	if _, err := uuid.FromString(token); err != nil {
+		return false
+	}
+
+	query := `SELECT * FROM users WHERE token = ?`
+	row := DB.QueryRow(query, token)
+	err := row.Scan(&data.Id, &data.UserName, &data.Email, &data.Password, &data.Image, &data.Role, &data.Token, &data.Token_Exp, &data.Created_at)
+
+	validDate := int(time.Now().Unix()) < data.Token_Exp
+	return err == nil && validDate
 }
 
+// Handle user logout
 func (data *Page) AuthLogout(res http.ResponseWriter, req *http.Request) {
 	if req.Method != "GET" {
 		data.Error(res, http.StatusMethodNotAllowed)
 		return
 	}
-	cookies := &http.Cookie{
+
+	http.SetCookie(res, &http.Cookie{
 		Name:    "token",
 		Value:   "",
 		Expires: time.Now(),
 		Path:    "/",
-	}
-	http.SetCookie(res, cookies)
+	})
+
 	data.User = User{}
 	http.Redirect(res, req, "/login", http.StatusFound)
 }

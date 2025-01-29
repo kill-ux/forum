@@ -10,7 +10,7 @@
     <div class="post-info">
         <div class="div post" id="div{{$post.Id}}">
             <span id="post{{.Id}}"></span>
-            {{ if eq $user $post.User.Id }}
+            <!-- {{ if eq $user $post.User.Id }}
             <a href="/posts/delete/{{$post.Id}}" onclick="return confirm(`Are you sure you want to delete this post?`)">
                 <svg class="edit-btn" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
                     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -57,7 +57,7 @@
                     </div>
                 </form>
             </fieldset>
-            {{ end }}
+            {{ end }} -->
             <div>
                 <a href="/#post{{.Id}}">
                     <svg class="left-post" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
@@ -89,9 +89,9 @@
                 {{if .Image}}<img src="/images/posts/{{.Image}}" class="post-image" alt="post image">{{end}}
             </div>
 
-            <form action="/posts/likes" method="POST" onsubmit="AfterSubmit(event)" id="likesForm">
+            <form action="/posts/likes" method="POST"  id="likesForm" class="likesPost">
                 <div class="likes">
-                    <button name="like" value="1" class="btn-like">
+                    <button name="like" value="1" class="btn-like btn-like-post">
                         <svg class=" {{ if $post.Did }} {{ if $post.Liked }} like-blue {{ end}} {{ end }}"
                             xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -102,7 +102,7 @@
                         </svg>
                         <span class="like-number">{{ $post.Like }}</span>
                     </button>
-                    <button name="like" value="0" class="btn-like">
+                    <button name="like" value="0" class="btn-like btn-dislike-post">
                         <svg class="{{ if $post.Did }} {{ if $post.Liked }}{{else}} like-red {{ end }} {{ end }}"
                             xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -120,7 +120,6 @@
             <div>
                 <div class="add-comment-post">
                     <form action="/comments/store" method="post" id="likesForm" class="add-comment-form">
-                        <input  type="hidden" name="user_id" value="{{ $page.Id }}" required>
                         <input  type="hidden" name="post_id" value="{{ .Id }}" required>
                         <input maxlength="1500" class="input-comment" type="text" value="" name="body"
                             placeholder="Write your comment..." required>
@@ -141,8 +140,8 @@
 
 
         <div class="comments">
-            <h2>Comments</h2>
-           {{ if $page.ErrorEmail }}  <h4 class="email-error post-error">*{{ $page.ErrorEmail }}</h4> {{ end }}
+            <!-- <h2>Comments</h2>
+            <h4 class="email-error post-error"> {{ if $page.ErrorEmail }}  *{{ $page.ErrorEmail }}{{ end }}</h4> 
             {{ range $comment := .Comments }}
             <div id="comment{{$comment.Id}}" class="comment">
 
@@ -157,7 +156,7 @@
                 <p id="p{{$comment.Id}}" name="body" disabled class="post-body">
                     {{ $comment.Body }}
                 </p>
-                <form action="/comments/likes" method="POST" onsubmit="AfterSubmit(event)">
+                <form action="/comments/likes" method="POST" >
                     <div class="likes-comment">
                         <button name="like" value="1" class="btn-like">
                             <svg class=" {{ if $comment.Did }} {{ if $comment.Liked }} like-blue {{ end}} {{ end }}"
@@ -182,9 +181,7 @@
                             <span class="like-number">{{ $comment.Dislike }}</span>
                         </button>
                     </div>
-                    <input  type="hidden" name="user_id" value="{{ $page.User.Id }}" required>
                     <input  type="hidden" name="comment_id" value="{{ $comment.Id }}" required>
-                    <input  type="hidden" name="post_id" value="{{ $post.Id }}" required>
                 </form>
             </div>
             {{ else }}
@@ -209,13 +206,19 @@
                     </svg>
                 </a>
                 {{ end }}
-            </div>
+            </div> -->
         </div>
     </div>
     </div>
     {{end}}
 
 </main>
+
+<script src="/js/comment.js">
+</script>
+
+<script src="/js/likepost.js">
+</script>
 
 
 {{template "footer.html" .}}
